@@ -4,6 +4,78 @@ const database = require("../utilities/database")
 
 const service = express.Router()
 
+const isNicknameTaken = async (nickname) => {
+  const session = database.session()
+  const query = `
+    OPTIONAL MATCH (u:User {nickname: $nickname})
+    RETURN (
+      CASE
+      WHEN u IS NULL THEN FALSE
+      ELSE TRUE
+      END
+    ) AS isTaken
+    LIMIT 1
+  `
+
+  const result = await session.run(query, {
+    nickname
+  })
+
+  session.close()
+
+  const [record] = result.records
+  const isTaken = record.get("isTaken")
+
+  return isTaken
+}
+
+const storeUser = async (user) => {
+  const session = database.session()
+  const query = `
+    CREATE (:User {
+      nickname: $nickname,
+      name: $name,
+      firstSurname: $firstSurname,
+      secondSurname: $secondSurname,
+      grade: $grade,
+      class: $class,
+      studentIdentifier: $studentIdentifier
+    })
+  `
+
+  await session.run(query, {
+    ...user
+  })
+}
+
+service.post("/create", async (request, response) => {
+  const { user } = request.body
+
+  try {
+    if (await isNicknameTaken(user.nickname)) {
+      response.status(400).send("NICKNAME_TAKEN")
+
+      return
+    }
+  } catch (error) {
+    console.log(error)
+
+    response.sendStatus(500)
+
+    return
+  }
+
+  try {
+    await storeUser(user)
+
+    response.sendStatus(200)
+  } catch (error) {
+    console.log(error)
+
+    response.sendStatus(500)
+  }
+})
+
 service.post("/update", async (request, response) => {
   const { nickname, ...user } = request.body
   const session = database.session()
