@@ -46,6 +46,8 @@ const storeUser = async (user) => {
   await session.run(query, {
     ...user
   })
+
+  session.close()
 }
 
 service.post("/create", async (request, response) => {
