@@ -15,9 +15,10 @@ service.post("/create", async (request, response) => {
       description: $description,
       urgency: $urgency,
       importance: $importance,
-      date: $date,
-      time: $time,
+      date: date($date),
+      time: datetime($time),
       category: $category,
+      completed: FALSE,
       imageBytes: $imageBytes
     })
   `
@@ -51,6 +52,29 @@ service.post("/update", async (request, response) => {
     await session.run(query, {
       taskId,
       task
+    })
+
+    session.close()
+
+    response.sendStatus(200)
+  } catch (error) {
+    console.log(error)
+
+    response.sendStatus(500)
+  }
+})
+
+service.post("/toggle_complete_task", async (request, response) => {
+  const { taskId } = request.body
+  const session = database.session()
+  const query = `
+    MATCH (t:Task {taskId: $taskId})
+    SET t.completed = (NOT t.completed)
+  `
+
+  try {
+    await session.run(query, {
+      taskId
     })
 
     session.close()

@@ -15,10 +15,11 @@ service.post("/create", async (request, response) => {
       description: $description,
       urgency: $urgency,
       importance: $importance,
-      time: $time,
+      time: datetime($time),
       weekday: $weekday,
       category: $category,
       variant: $variant,
+      lastCompletedDate: NULL,
       imageBytes: $imageBytes
     })
   `
@@ -52,6 +53,34 @@ service.post("/update", async (request, response) => {
     await session.run(query, {
       habitId,
       habit
+    })
+
+    session.close()
+
+    response.sendStatus(200)
+  } catch (error) {
+    console.log(error)
+
+    response.sendStatus(500)
+  }
+})
+
+service.post("/toggle_complete_habit", async (request, response) => {
+  const { habitId } = request.body
+  const session = database.session()
+  const query = `
+    MATCH (h:Habit {habitId: $habitId})
+    SET h.lastCompletedDate = (
+      CASE h.lastCompletedDate IS NULL
+        WHEH TRUE THEN date()
+        ELSE NULL
+      END
+    )
+  `
+
+  try {
+    await session.run(query, {
+      habitId
     })
 
     session.close()
