@@ -29,10 +29,11 @@ const isNicknameTaken = async (nickname) => {
   return isTaken
 }
 
-const storeUser = async (user) => {
+const storeUser = async (firebaseAuthenticationId, user) => {
   const session = database.session()
   const query = `
     CREATE (:User {
+      firebaseAuthenticationId: $firebaseAuthenticationId
       nickname: $nickname,
       name: $name,
       firstSurname: $firstSurname,
@@ -44,6 +45,7 @@ const storeUser = async (user) => {
   `
 
   await session.run(query, {
+    firebaseAuthenticationId: firebaseAuthenticationId,
     ...user
   })
 
@@ -51,7 +53,7 @@ const storeUser = async (user) => {
 }
 
 service.post("/create", async (request, response) => {
-  const { user } = request.body
+  const { firebaseAuthenticationId, user } = request.body
 
   try {
     if (await isNicknameTaken(user.nickname)) {
@@ -68,7 +70,7 @@ service.post("/create", async (request, response) => {
   }
 
   try {
-    await storeUser(user)
+    await storeUser(firebaseAuthenticationId, user)
 
     response.sendStatus(200)
   } catch (error) {
@@ -157,6 +159,33 @@ service.post("/get_by_nickname", async (request, response) => {
     }
 
     response.json(responsePayload)
+  } catch (error) {
+    console.log(error)
+
+    response.sendStatus(500)
+  }
+})
+
+service.post("/get_by_firebase_authentication_id", async (request, response) => {
+  const { firebaseAuthenticationId } = request.body
+  const session = database.session()
+  const query = `
+    MATCH (u:User {firebaseAuthenticationId: $firebaseAuthenticationId})
+    RETURN u AS user
+    LIMIT 1
+  `
+
+  try {
+    const result = await session.run(query, {
+      firebaseAuthenticationId
+    })
+
+    session.close()
+
+    const [record] = result.records
+    const user = record.get("user")
+
+    response.json(user)
   } catch (error) {
     console.log(error)
 
