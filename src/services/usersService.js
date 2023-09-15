@@ -33,7 +33,7 @@ const storeUser = async (firebaseAuthenticationId, user) => {
   const session = database.session()
   const query = `
     CREATE (:User {
-      firebaseAuthenticationId: $firebaseAuthenticationId
+      firebaseAuthenticationId: $firebaseAuthenticationId,
       nickname: $nickname,
       name: $name,
       firstSurname: $firstSurname,
@@ -82,6 +82,7 @@ service.post("/create", async (request, response) => {
 
 service.post("/update", async (request, response) => {
   const { nickname, ...user } = request.body
+  console.log(nickname)
   const session = database.session()
   const query = `
     MATCH (u:User {nickname: $nickname})
@@ -151,11 +152,11 @@ service.post("/get_by_nickname", async (request, response) => {
       nickname
     })
     const [record] = result.records
-    const user = record.get("user")
-    const theme = record.get("theme")
+    const user = record.get("user").properties
+    const theme = record.get("theme")?.properties
     const responsePayload = {
       ...user,
-      theme
+      theme: theme ?? null
     }
 
     response.json(responsePayload)
@@ -183,7 +184,7 @@ service.post("/get_by_firebase_authentication_id", async (request, response) => 
     session.close()
 
     const [record] = result.records
-    const user = record.get("user")
+    const user = record.get("user").properties
 
     response.json(user)
   } catch (error) {
