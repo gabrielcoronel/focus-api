@@ -1,11 +1,12 @@
 const express = require("express")
 const database = require("../utilities/database")
 const uuid4 = require("uuid4")
+const { neo4jDateTimeToString, ISODateToNeo4jDateTime } = require("../utilities/neo4j")
 
 const service = express.Router()
 
 service.post("/create", async (request, response) => {
-  const { nickname, ...habit } = request.body
+  const { nickname, habit } = request.body
   const session = database.session()
   const query = `
     MATCH (u:User {nickname: $nickname})
@@ -28,7 +29,8 @@ service.post("/create", async (request, response) => {
     await session.run(query, {
       nickname,
       habitId: uuid4(),
-      ...habit
+      ...habit,
+      time: ISODateToNeo4jDateTime(habit.time)
     })
 
     session.close()
@@ -52,7 +54,10 @@ service.post("/update", async (request, response) => {
   try {
     await session.run(query, {
       habitId,
-      habit
+      habit: {
+        ...habit,
+        time: ISODateToNeo4jDateTime(habit.time)
+      }
     })
 
     session.close()
@@ -70,12 +75,9 @@ service.post("/toggle_complete_habit", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (h:Habit {habitId: $habitId})
-    SET h.lastCompletedDate = (
-      CASE h.lastCompletedDate IS NULL
-        WHEH TRUE THEN date()
-        ELSE NULL
-      END
-    )
+    WITH h,
+    CASE WHEN h.lastCompletedDate IS NULL THEN date() ELSE NULL END AS newLastCompletedDate
+    SET h.lastCompletedDate = newLastCompletedDate
   `
 
   try {
@@ -98,7 +100,7 @@ service.post("/get_by_id", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (h:Habit {habitId: $habitId})
-    RETURN h
+    RETURN h AS habit
     LIMIT 1
   `
 
@@ -106,9 +108,20 @@ service.post("/get_by_id", async (request, response) => {
     const result = await session.run(query, {
       habitId
     })
-    const [habit] = result.records
 
     session.close()
+
+    const [record] = result.records
+    const field = record.get("habit").properties
+    const habit = {
+      ...field,
+      time: neo4jDateTimeToString(field.time),
+      lastCompletedDate: (
+        field.lastCompletedDate ?
+        neo4jDateTimeToString(field.lastCompletedDate) :
+        null
+      )
+    }
 
     response.json(habit)
   } catch (error) {
@@ -146,16 +159,30 @@ service.post("/get_user_habits", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (h:Habit)-[:HAS]-(:User {nickname: $nickname})
-    RETURN h
+    RETURN h AS habits
   `
 
   try {
     const result = await session.run(query, {
       nickname
     })
-    const habits = result.records.map((r) => r.toObject())
 
     session.close()
+
+    const habits = result.records.map((record) => {
+      const field = record.get("habits").properties
+      const habit = {
+        ...field,
+        time: neo4jDateTimeToString(field.time),
+        lastCompletedDate: (
+          field.lastCompletedDate ?
+          neo4jDateTimeToString(field.lastCompletedDate) :
+          null
+        )
+      }
+
+      return habit
+    })
 
     response.json(habits)
   } catch (error) {
@@ -169,18 +196,23 @@ service.post("/get_existent_categories", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
   const query = `
-    MATCH (t:Task)-[:HAS]-(:User {nickname: $nickname})
-    WHERE t.category IS NOT NULL
-    RETURN DISTINCT t.category AS category
+    MATCH (h:Habit)-[:HAS]-(:User {nickname: $nickname})
+    WHERE h.category IS NOT NULL
+    RETURN DISTINCT h.category AS category
   `
 
   try {
     const result = await session.run(query, {
       nickname
     })
-    const categories = result.records.map((r) => r.get("category"))
 
     session.close()
+
+    const categories = result.records.map((record) => {
+      const category = record.get("category")
+
+      return category
+    })
 
     response.json(categories)
   } catch (error) {

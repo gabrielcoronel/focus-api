@@ -1,10 +1,9 @@
 const express = require("express")
-const neo4j = require("neo4j-driver")
 const nodemailer = require("nodemailer")
 const uuid4 = require("uuid4")
 const process = require("process")
 const database = require("../utilities/database")
-const { neo4jDateTimeToString } = require("../utilities/neo4j")
+const { neo4jDateTimeToString, ISODateToNeo4jDateTime } = require("../utilities/neo4j")
 require("dotenv").config()
 
 const service = express.Router()
@@ -15,8 +14,7 @@ const storeAppointment = async (nickname, appointment) => {
     MATCH (u:User {nickname: $nickname})
     CREATE (:Appointment {
       appointmentId: $appointmentId,
-      date: date($date),
-      time: datetime($time),
+      datetime: datetime($datetime),
       description: $description
     })-[:BOOKS]->(u)
   `
@@ -24,8 +22,7 @@ const storeAppointment = async (nickname, appointment) => {
   await session.run(query, {
     appointmentId: uuid4(),
     nickname,
-    date: neo4j.DateTime.fromStandardDate(new Date(appointment.date)),
-    time: neo4j.DateTime.fromStandardDate(new Date(appointment.time)),
+    datetime: ISODateToNeo4jDateTime(appointment.datetime),
     description: appointment.description
   })
 
@@ -85,8 +82,7 @@ service.post("/get_pending_appointments", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (a:Appointment)-[:BOOKS]-(:User {nickname: $nickname})
-    WHERE a.date >= date()
-    AND a.time >= datetime() - Duration({minutes: 30})
+    WHERE a.datetime >= datetime() - Duration({minutes: 30})
     RETURN a AS appointments
   `
 
@@ -98,8 +94,7 @@ service.post("/get_pending_appointments", async (request, response) => {
       const field = record.get("appointments").properties
       const appointment = {
         ...field,
-        date: neo4jDateTimeToString(field.date),
-        time: neo4jDateTimeToString(field.time)
+        datetime: neo4jDateTimeToString(field.datetime),
       }
 
       return appointment

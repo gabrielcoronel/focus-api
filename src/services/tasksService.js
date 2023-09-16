@@ -1,11 +1,12 @@
 const express = require("express")
 const database = require("../utilities/database")
 const uuid4 = require("uuid4")
+const { neo4jDateTimeToString, ISODateToNeo4jDateTime } = require("../utilities/neo4j")
 
 const service = express.Router()
 
 service.post("/create", async (request, response) => {
-  const { nickname, ...task } = request.body
+  const { nickname, task } = request.body
   const session = database.session()
   const query = `
     MATCH (u:User {nickname: $nickname})
@@ -15,8 +16,7 @@ service.post("/create", async (request, response) => {
       description: $description,
       urgency: $urgency,
       importance: $importance,
-      date: date($date),
-      time: datetime($time),
+      datetime: datetime($datetime),
       category: $category,
       completed: FALSE,
       imageBytes: $imageBytes
@@ -27,7 +27,8 @@ service.post("/create", async (request, response) => {
     await session.run(query, {
       nickname,
       taskId: uuid4(),
-      ...task
+      ...task,
+      datetime: ISODateToNeo4jDateTime(task.datetime)
     })
 
     session.close()
@@ -51,7 +52,10 @@ service.post("/update", async (request, response) => {
   try {
     await session.run(query, {
       taskId,
-      task
+      task: {
+        ...task,
+        datetime: ISODateToNeo4jDateTime(task.datetime)
+      }
     })
 
     session.close()
@@ -92,7 +96,7 @@ service.post("/get_by_id", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (t:Task {taskId: $taskId})
-    RETURN t
+    RETURN t AS task
     LIMIT 1
   `
 
@@ -100,9 +104,14 @@ service.post("/get_by_id", async (request, response) => {
     const result = await session.run(query, {
       taskId
     })
-    const [task] = result.records
-
     session.close()
+
+    const [record] = result.records
+    const field = record.get("task").properties
+    const task = {
+      ...field,
+      datetime: neo4jDateTimeToString(field.datetime)
+    }
 
     response.json(task)
   } catch (error) {
@@ -140,16 +149,25 @@ service.post("/get_user_tasks", async (request, response) => {
   const session = database.session()
   const query = `
     MATCH (t:Task)-[:HAS]-(:User {nickname: $nickname})
-    RETURN t
+    RETURN t AS tasks
   `
 
   try {
     const result = await session.run(query, {
       nickname
     })
-    const tasks = result.records.map((r) => r.toObject())
 
     session.close()
+
+    const tasks = result.records.map((record) => {
+      const field = record.get("tasks").properties
+      const task = {
+        ...field,
+        datetime: neo4jDateTimeToString(field.datetime)
+      }
+
+      return task
+    })
 
     response.json(tasks)
   } catch (error) {
@@ -163,18 +181,23 @@ service.post("/get_existent_categories", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
   const query = `
-    MATCH (h:Habit)-[:HAS]-(:User {nickname: $nickname})
-    WHERE h.category IS NOT NULL
-    RETURN DISTINCT h.category AS category
+    MATCH (t:Task)-[:HAS]-(:User {nickname: $nickname})
+    WHERE t.category IS NOT NULL
+    RETURN DISTINCT t.category AS category
   `
 
   try {
     const result = await session.run(query, {
       nickname
     })
-    const categories = result.records.map((r) => r.get("category"))
 
     session.close()
+
+    const categories = result.records.map((record) => {
+      const category = record.get("category")
+
+      return category
+    })
 
     response.json(categories)
   } catch (error) {

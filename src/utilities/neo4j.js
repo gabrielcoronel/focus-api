@@ -1,3 +1,5 @@
+const neo4j = require("neo4j-driver")
+
 const readDateTimeProperty = (property) => {
   if (property === null || property === undefined) {
     return 0
@@ -22,6 +24,14 @@ const neo4jDateTimeToString = (neo4jDateTime) => {
   return string
 }
 
+const ISODateToNeo4jDateTime = (ISODate) => {
+  const date = new Date(ISODate)
+  const neo4jDateTime = neo4j.DateTime.fromStandardDate(date)
+
+  return neo4jDateTime
+}
+
 module.exports = {
-  neo4jDateTimeToString
+  neo4jDateTimeToString,
+  ISODateToNeo4jDateTime
 }
