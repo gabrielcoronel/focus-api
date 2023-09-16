@@ -52,6 +52,17 @@ const storeUser = async (firebaseAuthenticationId, user) => {
   session.close()
 }
 
+/**
+  * Guarda la información de un usuario y lo asocia con el ID de autenticación
+  * de Firebase
+  *
+  * Esquema del cuerpo de la solicitud:
+  *
+  * `
+  *   firebaseAuthenticationId: string, // ID de Firebase
+  *   user: User // datos del usuario
+  * `
+  */
 service.post("/create", async (request, response) => {
   const { firebaseAuthenticationId, user } = request.body
 
@@ -80,6 +91,16 @@ service.post("/create", async (request, response) => {
   }
 })
 
+/**
+  * Actualiza la información de un usuario
+  *
+  * Esquema del cuerpo de la solicitud:
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario a actualizar
+  *   ...user: User // datos del usuario
+  * `
+  */
 service.post("/update", async (request, response) => {
   const { nickname, ...user } = request.body
   console.log(nickname)
@@ -105,6 +126,16 @@ service.post("/update", async (request, response) => {
   }
 })
 
+/**
+  * Actualiza la información de la personalización de colores de un usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // nombre de usuario
+  *   ...theme: Theme, // datos de la personalización
+  * `
+  */
 service.post("/set_theme", async (request, response) => {
   const { nickname, ...theme } = request.body
   const session = database.session()
@@ -135,6 +166,22 @@ service.post("/set_theme", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene información de un usuario con base a su nombre de usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string // nombre del usuario
+  * `
+  *
+  * Esquema del cuerpo de la respuesta
+  * 
+  * `
+  *   ...user: User, // información del usuario
+  *   theme: Theme? // información de la personalización del usuario (opcional)
+  * `
+  */
 service.post("/get_by_nickname", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
@@ -167,6 +214,18 @@ service.post("/get_by_nickname", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la información de un usuario con base a su ID de autenticación de
+  * Firebase, esto está pensado como es pasó posterior al inicio de sesión
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   firebaseAuthenticationId: string, // ID de Firebase
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: User
+  */
 service.post("/get_by_firebase_authentication_id", async (request, response) => {
   const { firebaseAuthenticationId } = request.body
   const session = database.session()

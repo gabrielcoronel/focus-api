@@ -5,6 +5,16 @@ const { neo4jDateTimeToString, ISODateToNeo4jDateTime } = require("../utilities/
 
 const service = express.Router()
 
+/**
+  * Crea un nuevo hábito para un usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // el nombre usuario
+  *   habit: Habit // datos del hábito
+  * `
+  */
 service.post("/create", async (request, response) => {
   const { nickname, habit } = request.body
   const session = database.session()
@@ -43,6 +53,16 @@ service.post("/create", async (request, response) => {
   }
 })
 
+/**
+  * Actualiza la información de un hábito
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   habitId: string, // ID del hábito
+  *   ...habit: Habit // nuevos datos del hábito
+  * `
+  */
 service.post("/update", async (request, response) => {
   const { habitId, ...habit } = request.body
   const session = database.session()
@@ -70,6 +90,15 @@ service.post("/update", async (request, response) => {
   }
 })
 
+/**
+  * Marca o desmarca un hábito como completado
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   habitId: string
+  * `
+  */
 service.post("/toggle_complete_habit", async (request, response) => {
   const { habitId } = request.body
   const session = database.session()
@@ -95,6 +124,17 @@ service.post("/toggle_complete_habit", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la información de un hábito con base a su ID
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   habitId: string, // El ID del hábito a obtener
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: Habit
+  */
 service.post("/get_by_id", async (request, response) => {
   const { habitId } = request.body
   const session = database.session()
@@ -131,6 +171,15 @@ service.post("/get_by_id", async (request, response) => {
   }
 })
 
+/**
+  * Elimina un hábito
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   habitId: string, // ID del hábito
+  * `
+  */
 service.post("/delete", async (request, response) => {
   const { habitId } = request.body
   const session = database.session()
@@ -154,6 +203,17 @@ service.post("/delete", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la lista de hábitos de un usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: [Habit]
+  */
 service.post("/get_user_habits", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
@@ -192,6 +252,18 @@ service.post("/get_user_habits", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la lista de categorías ya registradas, esto es conveniente para
+  * proporcionar autocompletado en el formulario para crear un nuevo hábito
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario actual
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: [string]
+  */
 service.post("/get_existent_categories", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()

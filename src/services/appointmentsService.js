@@ -53,6 +53,17 @@ const bookAppointment = async (nickname, appointment) => {
   return result
 }
 
+/**
+  * Agenda una nueva cita por correo y la almacena en el registro de la base
+  * de datos
+  *
+  * Esquema del cuerpo de la respuesta
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario actual
+  *   appointment: Appointment // datos de la cita
+  * `
+  */
 service.post("/create", async (request, response) => {
   const { nickname, appointment } = request.body
 
@@ -77,6 +88,19 @@ service.post("/create", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la lista de citas pendientes para el usuario. En este contexto,
+  * pendiente significa agendada para fechas futuras a la actual con un margen
+  * de espera de 30 minutos.
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string // nombre de usuario del usuario
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: [Appointment]
+  */
 service.post("/get_pending_appointments", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()

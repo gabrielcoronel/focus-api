@@ -5,6 +5,16 @@ const { neo4jDateTimeToString, ISODateToNeo4jDateTime } = require("../utilities/
 
 const service = express.Router()
 
+/**
+  * Crea un nuevo tarea para un usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // el nombre usuario
+  *   task: Task // datos del tarea
+  * `
+  */
 service.post("/create", async (request, response) => {
   const { nickname, task } = request.body
   const session = database.session()
@@ -41,6 +51,16 @@ service.post("/create", async (request, response) => {
   }
 })
 
+/**
+  * Actualiza la información de un tarea
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   taskId: string, // ID del tarea
+  *   ...task: Task // nuevos datos del tarea
+  * `
+  */
 service.post("/update", async (request, response) => {
   const { taskId, ...task } = request.body
   const session = database.session()
@@ -68,6 +88,15 @@ service.post("/update", async (request, response) => {
   }
 })
 
+/**
+  * Marca o desmarca un tarea como completado
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   taskId: string
+  * `
+  */
 service.post("/toggle_complete_task", async (request, response) => {
   const { taskId } = request.body
   const session = database.session()
@@ -91,6 +120,17 @@ service.post("/toggle_complete_task", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la información de un tarea con base a su ID
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   taskId: string, // El ID del tarea a obtener
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: Task
+  */
 service.post("/get_by_id", async (request, response) => {
   const { taskId } = request.body
   const session = database.session()
@@ -121,6 +161,15 @@ service.post("/get_by_id", async (request, response) => {
   }
 })
 
+/**
+  * Elimina un tarea
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   taskId: string, // ID del tarea
+  * `
+  */
 service.post("/delete", async (request, response) => {
   const { taskId } = request.body
   const session = database.session()
@@ -144,6 +193,17 @@ service.post("/delete", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la lista de tareas de un usuario
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: [Task]
+  */
 service.post("/get_user_tasks", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
@@ -177,6 +237,18 @@ service.post("/get_user_tasks", async (request, response) => {
   }
 })
 
+/**
+  * Obtiene la lista de categorías ya registradas, esto es conveniente para
+  * proporcionar autocompletado en el formulario para crear un nuevo tarea
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string, // nombre de usuario del usuario actual
+  * `
+  *
+  * Esquema del cuerpo de la respuesta: [string]
+  */
 service.post("/get_existent_categories", async (request, response) => {
   const { nickname } = request.body
   const session = database.session()
