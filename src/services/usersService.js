@@ -1,6 +1,8 @@
 const express = require("express")
+const cors = require("cors");
 const uuid4 = require("uuid4")
 const database = require("../utilities/database")
+
 
 const service = express.Router()
 
@@ -213,6 +215,52 @@ service.post("/get_by_nickname", async (request, response) => {
     response.sendStatus(500)
   }
 })
+
+/**
+  * Obtiene información de un usuario con base a su nombre de usuario (para saber si ya tiene datos en la BD)
+  *
+  * Esquema del cuerpo de la solicitud
+  *
+  * `
+  *   nickname: string // nombre del usuario
+  * `
+  *
+  * Esquema del cuerpo de la respuesta
+  * 
+  * `
+  *   ...user: User, // información del usuario
+  *   theme: Theme? // información de la personalización del usuario (opcional)
+  * `
+  */
+
+service.get("/get_by_nickname/:nickname", async (request, response) => {
+  const { nickname } = request.params;
+
+  const session = database.session();
+  const query = `
+    MATCH (u:User {nickname: $nickname})
+    RETURN u.nickname
+  `;
+
+  try {
+    const result = await session.run(query, { nickname });
+    const [record] = result.records;
+
+    if (record) {
+      const userNickname = record.get("u.nickname");
+      response.status(200).json({ nickname: userNickname });
+    } else {
+      response.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    console.error(error);
+    response.status(500).json({ message: "Internal Server Error" });
+  } finally {
+    session.close();
+  }
+});
+
+
 
 /**
   * Obtiene la información de un usuario con base a su ID de autenticación de

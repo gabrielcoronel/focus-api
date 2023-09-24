@@ -1,4 +1,5 @@
 const express = require("express")
+const cors = require("cors");
 const morgan = require("morgan")
 const bodyParser = require("body-parser")
 const usersService = require("./services/usersService")
@@ -11,6 +12,13 @@ const app = express()
 
 app.use(morgan("tiny"))
 app.use(bodyParser.json())
+
+// Configura CORS para permitir solicitudes desde cualquier origen
+app.use(cors({
+    origin: "http://localhost:3000", // Reemplaza con la URL de tu aplicación React
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true
+}));
 
 app.use("/users_service", usersService)
 app.use("/tasks_service", tasksService)
