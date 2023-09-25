@@ -222,28 +222,28 @@ service.post("/get_by_nickname", async (request, response) => {
   * Esquema del cuerpo de la solicitud
   *
   * `
-  *   nickname: string // nombre del usuario
+  *   firebaseAuthenticationId: string // UID del usuario en Firebase
   * `
   *
   * Esquema del cuerpo de la respuesta
   * 
   * `
-  *   ...user: User, // información del usuario
-  *   theme: Theme? // información de la personalización del usuario (opcional)
+  *   ...firebaseAuthenticationId: firebaseAuthenticationId, // información del usuario
   * `
   */
 
-service.get("/get_by_nickname/:nickname", async (request, response) => {
-  const { nickname } = request.params;
+service.get("/get_by_firebase_id/:firebaseAuthenticationId", async (request, response) => {
+  const { firebaseAuthenticationId } = request.params; 
+  // Utilizamos request.params para obtener el firebaseAuthenticationId de la URL
 
   const session = database.session();
   const query = `
-    MATCH (u:User {nickname: $nickname})
+    MATCH (u:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     RETURN u.nickname
   `;
 
   try {
-    const result = await session.run(query, { nickname });
+    const result = await session.run(query, { firebaseAuthenticationId });
     const [record] = result.records;
 
     if (record) {
@@ -259,6 +259,7 @@ service.get("/get_by_nickname/:nickname", async (request, response) => {
     session.close();
   }
 });
+
 
 
 
