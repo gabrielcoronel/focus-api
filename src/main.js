@@ -15,7 +15,7 @@ app.use(bodyParser.json())
 
 // Configura CORS para permitir solicitudes desde cualquier origen
 app.use(cors({
-    origin: "http://localhost:3000", // Reemplaza con la URL de tu aplicación React
+    origin: "http://localhost:3000", // Cambiar según la direccion de la App
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true
 }));

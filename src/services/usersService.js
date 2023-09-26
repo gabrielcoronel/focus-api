@@ -65,6 +65,7 @@ const storeUser = async (firebaseAuthenticationId, user) => {
   *   user: User // datos del usuario
   * `
   */
+ 
 service.post("/create", async (request, response) => {
   const { firebaseAuthenticationId, user } = request.body
 
