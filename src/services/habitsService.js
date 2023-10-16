@@ -16,28 +16,25 @@ const service = express.Router()
   * `
   */
 service.post("/create", async (request, response) => {
-  const { nickname, habit } = request.body
+  const { firebaseAuthenticationId, habit } = request.body
   const session = database.session()
   const query = `
-    MATCH (u:User {nickname: $nickname})
+    MATCH (u:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     CREATE (u)-[:HAS]->(:Habit {
       title: $title,
       habitId: $habitId,
       description: $description,
       urgency: $urgency,
-      importance: $importance,
       time: datetime($time),
       weekday: $weekday,
       category: $category,
-      variant: $variant,
       lastCompletedDate: NULL,
-      imageBytes: $imageBytes
     })
   `
 
   try {
     await session.run(query, {
-      nickname,
+      firebaseAuthenticationId,
       habitId: uuid4(),
       ...habit,
       time: ISODateToNeo4jDateTime(habit.time)
@@ -215,16 +212,16 @@ service.post("/delete", async (request, response) => {
   * Esquema del cuerpo de la respuesta: [Habit]
   */
 service.post("/get_user_habits", async (request, response) => {
-  const { nickname } = request.body
+  const { firebaseAuthenticationId } = request.body
   const session = database.session()
   const query = `
-    MATCH (h:Habit)-[:HAS]-(:User {nickname: $nickname})
+    MATCH (h:Habit)-[:HAS]-(:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     RETURN h AS habits
   `
 
   try {
     const result = await session.run(query, {
-      nickname
+      firebaseAuthenticationId
     })
 
     session.close()

@@ -11,30 +11,28 @@ const service = express.Router()
   * Esquema del cuerpo de la solicitud
   *
   * `
-  *   nickname: string, // el nombre usuario
+  *   firebaseAuthenticationId: string, // el nombre usuario
   *   task: Task // datos del tarea
   * `
   */
 service.post("/create", async (request, response) => {
-  const { nickname, task } = request.body
+  const { firebaseAuthenticationId, task } = request.body
   const session = database.session()
   const query = `
-    MATCH (u:User {nickname: $nickname})
+    MATCH (u:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     CREATE (u)-[:HAS]->(:Task {
       title: $title,
-      taskId: $taskId,
       description: $description,
       urgency: $urgency,
       datetime: datetime($datetime),
       category: $category,
-      completed: FALSE,
-      imageBytes: $imageBytes
+      completed: FALSE
     })
   `
 
   try {
     await session.run(query, {
-      nickname,
+      firebaseAuthenticationId,
       taskId: uuid4(),
       ...task,
       datetime: ISODateToNeo4jDateTime(task.datetime)
@@ -198,22 +196,22 @@ service.post("/delete", async (request, response) => {
   * Esquema del cuerpo de la solicitud
   *
   * `
-  *   nickname: string, // nombre de usuario del usuario
+  *   firebaseAuthenticationId: string, // nombre de usuario del usuario
   * `
   *
   * Esquema del cuerpo de la respuesta: [Task]
   */
 service.post("/get_user_tasks", async (request, response) => {
-  const { nickname } = request.body
+  const { firebaseAuthenticationId } = request.body
   const session = database.session()
   const query = `
-    MATCH (t:Task)-[:HAS]-(:User {nickname: $nickname})
+    MATCH (t:Task)-[:HAS]-(:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     RETURN t AS tasks
   `
 
   try {
     const result = await session.run(query, {
-      nickname
+      firebaseAuthenticationId
     })
 
     session.close()
