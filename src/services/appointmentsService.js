@@ -163,23 +163,23 @@ service.post("/create", async (request, response) => {
   * Esquema del cuerpo de la solicitud
   *
   * `
-  *   nickname: string // nombre de usuario del usuario
+  *   firebaseAuthenticationId: string // id de autenticación firebase
   * `
   *
   * Esquema del cuerpo de la respuesta: [Appointment]
   */
 service.post("/get_pending_appointments", async (request, response) => {
-  const { nickname } = request.body
+  const { firebaseAuthenticationId } = request.body
   const session = database.session()
   const query = `
-    MATCH (a:Appointment)-[:BOOKS]-(:User {nickname: $nickname})
+    MATCH (a:Appointment)-[:BOOKS]-(:User {firebaseAuthenticationId: $firebaseAuthenticationId})
     WHERE a.datetime >= datetime() - Duration({minutes: 30})
     RETURN a AS appointments
   `
 
   try {
     const result = await session.run(query, {
-      nickname
+      firebaseAuthenticationId
     })
     const appointments = result.records.map((record) => {
       const field = record.get("appointments").properties
