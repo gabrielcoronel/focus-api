@@ -25,7 +25,6 @@ service.post("/create", async (request, response) => {
       taskId: $taskId,
       description: $description,
       urgency: $urgency,
-      importance: $importance,
       datetime: datetime($datetime),
       category: $category,
       completed: FALSE,
